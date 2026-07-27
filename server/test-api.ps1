@@ -1,0 +1,1 @@
+Invoke-RestMethod -Uri "http://localhost:3001/api/v1/auth/login" -Method POST -ContentType "application/json" -Body '{"email":"demo@projectflow.com","password":"password123"}' | ConvertTo-Json -Depth 5
