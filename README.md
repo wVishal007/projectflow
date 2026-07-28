@@ -2,7 +2,7 @@
 
 A production-grade Task & Project Management Platform with Analytics, built with React, Express.js, TypeScript, PostgreSQL, and Prisma.
 
-> **Live Demo:** <!-- Add your deployed URL here --> <!-- `https://projectflow.onrender.com` -->
+> **Live Demo:** [https://projectflow-nk0s.onrender.com](https://projectflow-nk0s.onrender.com)
 
 ---
 
@@ -319,6 +319,12 @@ npm run test:watch -w server
 |------|---------------|
 | [`docs/api.md`](docs/api.md) | All 25 endpoints, request/response schemas, error codes, rate limits, pagination |
 | [`docs/architecture.md`](docs/architecture.md) | Mermaid diagrams: system architecture, request lifecycle, auth flow, ERD, module graph, deployment, CI/CD |
+
+---
+
+## AI Usage
+
+AI was used extensively throughout the development of this project. Specifically: architecture design decisions (modular monolith pattern, single-service deployment), boilerplate generation for Express middleware pipeline, Prisma schema design, React component scaffolding, Zod validation schemas, JWT auth flow implementation, structured logging setup with Pino, Docker configuration, CI/CD pipeline, and documentation (API reference with all 25 endpoints, Mermaid architecture diagrams). Manual changes included: debugging deployment issues (trust proxy, runtime migrations, Neon PostgreSQL connectivity), UI/UX refinements (focus management, responsive layout, gradient design system), writing integration tests, and performance optimizations (useCallback, useMemo for React renders).
 
 ---
 

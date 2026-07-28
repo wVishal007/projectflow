@@ -13,7 +13,7 @@
     "build:server": "npm run build -w server",
     "build:client": "npm run build -w client",
     "start": "node server/dist/index.js",
-    "render-build": "npm install && npx prisma generate --schema=server/prisma/schema.prisma && npm run build && npx prisma migrate deploy --schema=server/prisma/schema.prisma",
+    "render-build": "npm install && npx prisma generate --schema=server/prisma/schema.prisma && npm run build",
     "test": "npm run test -w server",
     "test:client": "npm run test -w client",
     "lint": "npm run lint -w server && npm run lint -w client",
