@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProject } from '../hooks/useProjects';
 import { useTasks, useCreateTask, useUpdateTaskStatus, useDeleteTask } from '../hooks/useTasks';
@@ -14,12 +14,29 @@ import { formatDate } from '../lib/utils';
 
 const STATUSES: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED'];
 
+const statusColors = {
+  TODO: 'from-gray-400 to-gray-500',
+  IN_PROGRESS: 'from-blue-500 to-blue-400',
+  IN_REVIEW: 'from-yellow-500 to-yellow-400',
+  DONE: 'from-green-500 to-green-400',
+  CANCELLED: 'from-red-500 to-red-400',
+};
+
+const statusLabels = {
+  TODO: 'To Do',
+  IN_PROGRESS: 'In Progress',
+  IN_REVIEW: 'In Review',
+  DONE: 'Done',
+  CANCELLED: 'Cancelled',
+};
+
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
+  const [titleError, setTitleError] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'ALL'>('ALL');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
@@ -29,25 +46,31 @@ export function ProjectDetail() {
   const statusMutation = useUpdateTaskStatus();
   const deleteMutation = useDeleteTask();
 
-  const handleCreate = async () => {
-    if (!title.trim()) return;
+  const handleCreate = useCallback(async () => {
+    if (!title.trim()) {
+      setTitleError('Task title is required');
+      return;
+    }
+    setTitleError('');
     await createMutation.mutateAsync({ projectId: id!, data: { title, description, priority } });
     setShowCreate(false);
     setTitle('');
     setDescription('');
     setPriority('MEDIUM');
-  };
+  }, [title, description, priority, id, createMutation]);
 
-  const handleStatusChange = (taskId: string, newStatus: TaskStatus) => {
+  const handleStatusChange = useCallback((taskId: string, newStatus: TaskStatus) => {
     statusMutation.mutate({ id: taskId, status: newStatus });
-  };
+  }, [statusMutation]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
     });
-  };
+  }, [deleteTarget, deleteMutation]);
+
+  const handleOpenCreate = useCallback(() => setShowCreate(true), []);
 
   if (projectError || tasksError) return <ErrorState message="Failed to load project" onRetry={() => { refetchProject(); refetchTasks(); }} />;
 
@@ -59,9 +82,9 @@ export function ProjectDetail() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-        <Link to="/projects" className="hover:text-primary-600">Projects</Link>
+        <Link to="/projects" className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Projects</Link>
         <span>/</span>
         <span className="text-gray-900 dark:text-gray-100 font-medium">{project?.name || 'Loading...'}</span>
       </div>
@@ -70,16 +93,25 @@ export function ProjectDetail() {
         <CardSkeleton />
       ) : project && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: project.color }} />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md" style={{ backgroundColor: project.color }}>
+              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
           </div>
-          <Button onClick={() => setShowCreate(true)}>New Task</Button>
+          <Button onClick={handleOpenCreate} size="lg">
+            <svg className="w-4.5 h-4.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Task
+          </Button>
         </div>
       )}
 
       {project?.description && (
-        <p className="text-gray-600 dark:text-gray-400">{project.description}</p>
+        <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{project.description}</p>
       )}
 
       {allTasks.length > 0 && (
@@ -88,13 +120,13 @@ export function ProjectDetail() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 ${
                 statusFilter === s
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-primary-600 text-white shadow-md'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
-              {s === 'ALL' ? 'All' : s.replace('_', ' ')}
+              {s === 'ALL' ? 'All' : statusLabels[s as TaskStatus]}
             </button>
           ))}
         </div>
@@ -108,7 +140,12 @@ export function ProjectDetail() {
         <EmptyState
           title="No tasks yet"
           description="Create your first task for this project"
-          action={<Button onClick={() => setShowCreate(true)}>Create Task</Button>}
+          action={<Button onClick={handleOpenCreate}>Create Task</Button>}
+          icon={
+            <svg className="w-9 h-9 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          }
         />
       ) : tasks.length === 0 ? (
         <EmptyState
@@ -118,7 +155,7 @@ export function ProjectDetail() {
       ) : (
         <div className="space-y-3">
           {tasks.map((task: any) => (
-            <div key={task.id} className="card flex flex-col sm:flex-row sm:items-center justify-between py-4 group gap-3">
+            <div key={task.id} className="card flex flex-col sm:flex-row sm:items-center justify-between py-4 group gap-3 border-l-4 transition-all hover:shadow-md" style={{ borderLeftColor: task.status === 'TODO' ? '#9CA3AF' : task.status === 'IN_PROGRESS' ? '#3B82F6' : task.status === 'IN_REVIEW' ? '#EAB308' : task.status === 'DONE' ? '#22C55E' : '#F87171' }}>
               <div className="flex-1 min-w-0 mr-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-medium text-gray-900 dark:text-gray-100">{task.title}</h3>
@@ -138,16 +175,16 @@ export function ProjectDetail() {
                 <select
                   value={task.status}
                   onChange={(e) => handleStatusChange(task.id, e.target.value as TaskStatus)}
-                  className="text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1"
+                  className="input-field w-auto min-w-[140px] text-xs py-1.5"
                   aria-label="Task status"
                 >
                   {STATUSES.map((s) => (
-                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                    <option key={s} value={s}>{statusLabels[s]}</option>
                   ))}
                 </select>
                 <button
                   onClick={() => setDeleteTarget({ id: task.id, title: task.title })}
-                  className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                  className="text-gray-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-500"
                   aria-label="Delete task"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,18 +197,24 @@ export function ProjectDetail() {
         </div>
       )}
 
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Task">
-        <div className="space-y-4">
+      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Task" size="md">
+        <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="input-field"
+              onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError(''); }}
+              className={`input-field ${titleError ? 'input-field-error' : ''}`}
               placeholder="Task title"
               autoFocus
             />
+            {titleError && <p className="text-xs text-red-600 dark:text-red-400 mt-1.5 flex items-center gap-1 animate-slideDown" role="alert">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {titleError}
+            </p>}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
@@ -192,7 +235,7 @@ export function ProjectDetail() {
               <option value="URGENT">Urgent</option>
             </select>
           </div>
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 pt-2">
             <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handleCreate} loading={createMutation.isPending}>Create</Button>
           </div>

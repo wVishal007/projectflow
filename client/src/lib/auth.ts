@@ -19,7 +19,7 @@ export function getToken(): string | null {
   return localStorage.getItem('accessToken');
 }
 
-export function logout() {
+export function clearAuth() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');

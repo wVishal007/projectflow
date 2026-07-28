@@ -2,9 +2,137 @@
 
 A production-grade Task & Project Management Platform with Analytics, built with React, Express.js, TypeScript, PostgreSQL, and Prisma.
 
+> **Live Demo:** <!-- Add your deployed URL here --> <!-- `https://projectflow.onrender.com` -->
+
 ---
 
-## Architecture
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="screenshots/dashboard.png" alt="Dashboard" width="100%"></td>
+    <td><img src="screenshots/projects-section.png" alt="Projects" width="100%"></td>
+  </tr>
+  <tr>
+    <td><em>Dashboard with stats cards, status breakdown, and recent tasks</em></td>
+    <td><em>Project cards with color coding and search</em></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/analytics.png" alt="Analytics" width="100%"></td>
+    <td><img src="screenshots/login.png" alt="Login" width="100%"></td>
+  </tr>
+  <tr>
+    <td><em>Analytics with charts, priority breakdown, and activity feed</em></td>
+    <td><em>Login with gradient UI and password toggle</em></td>
+  </tr>
+</table>
+
+---
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph Browser["Browser (SPA)"]
+        React[React 18 + React Query]
+    end
+
+    subgraph Server["Express Server :3001"]
+        MW[Middleware Pipeline]
+        API["API Routes /api/v1/*"]
+        SPA["SPA Catch-all index.html"]
+        Static["Static Assets client/dist/"]
+    end
+
+    subgraph DB["Database"]
+        PG[("PostgreSQL 16")]
+    end
+
+    React -->|"HTTP/HTTPS"| Server
+    API --> MW
+    MW -->|Auth, Validation, Rate Limiting| API
+    API -->|"Prisma ORM"| PG
+
+    Server -->|NODE_ENV=production| Static
+    Server --> SPA
+    Static -.->|serves build files| React
+    SPA -.->|returns index.html| React
+
+    style Browser fill:#e1f5fe,stroke:#01579b
+    style Server fill:#f3e5f5,stroke:#7b1fa2
+    style DB fill:#e8f5e9,stroke:#2e7d32
+```
+
+### Key Design Decisions
+
+- **Single-service deployment** -- Express serves both the REST API and the built SPA. No separate frontend server.
+- **Modular Architecture** -- Each domain (auth, projects, tasks, comments, analytics) is self-contained with routes, controller, service, and schema.
+- **Type Safety** -- End-to-end TypeScript with Zod validation on all inputs.
+- **Optimistic UI** -- React Query handles caching, refetching, and optimistic updates.
+
+> See full architecture diagrams (request lifecycle, auth flow, ERD, module graph, deployment) in [`docs/architecture.md`](docs/architecture.md).
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 22 + TypeScript |
+| Backend | Express.js 4 |
+| ORM | Prisma 6 |
+| Database | PostgreSQL 16 |
+| Validation | Zod |
+| Auth | JWT (access + refresh tokens) + bcrypt |
+| Logging | Pino (structured JSON) |
+| Security | Helmet, CORS, rate limiting |
+| Frontend | React 18 + TypeScript + Vite |
+| Styling | Tailwind CSS |
+| State | TanStack React Query |
+| Charts | Recharts |
+
+---
+
+## API Overview
+
+**Base URL:** `http://localhost:3001` (dev) or production domain
+**Auth:** `Authorization: Bearer <accessToken>`
+
+### Quick Example -- Login
+
+```bash
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"demo@projectflow.com","password":"password123"}'
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "accessToken": "eyJhbG...",
+    "refreshToken": "eyJhbG...",
+    "user": { "id": "...", "name": "Demo User", "email": "demo@projectflow.com" }
+  }
+}
+```
+
+### All 25 Endpoints
+
+| Module | Endpoints |
+|--------|-----------|
+| Health | `GET /health`, `/health/live`, `/health/ready` |
+| Auth | `POST /register`, `/login`, `/refresh`, `GET /me` |
+| Projects | `GET /projects`, `POST`, `GET /:id`, `PUT /:id`, `DELETE /:id` |
+| Tasks | `GET /tasks/project/:projectId`, `POST`, `GET /:id`, `PUT /:id`, `PATCH /:id/status`, `DELETE /:id` |
+| Comments | `GET /comments/task/:taskId`, `POST`, `DELETE /:id` |
+| Analytics | `GET /analytics/overview`, `/analytics/projects/:id`, `/analytics/activity` |
+
+> Full request/response schemas, error codes, and pagination docs: [`docs/api.md`](docs/api.md)
+
+---
+
+## Directory Structure
 
 ```
 project/
@@ -29,37 +157,10 @@ project/
 │       └── types/        Shared TypeScript types
 ├── docker/          Dockerfile for unified single-service build
 ├── docs/            API reference and architecture documentation
+├── screenshots/     Application screenshots
 ├── .github/         CI/CD workflow
 └── docker-compose.yml
 ```
-
-### Key Design Decisions
-
-- **Single-service deployment**: In production, Express serves both the REST API (`/api/*`) and the built SPA (`client/dist/`). No separate frontend server needed.
-- **Modular Architecture**: Each domain (auth, projects, tasks, comments, analytics) is self-contained with routes, controller, service, and schema.
-- **Separation of Concerns**: Controllers handle HTTP, services handle business logic, middleware handles cross-cutting.
-- **Centralized Error Handling**: Custom error classes propagate through Express error middleware.
-- **Type Safety**: End-to-end TypeScript with Zod validation schemas.
-- **Optimistic UI**: React Query handles caching, refetching, and optimistic updates.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Node.js 22 + TypeScript |
-| Backend | Express.js 4 |
-| ORM | Prisma 6 |
-| Database | PostgreSQL 16 |
-| Validation | Zod |
-| Auth | JWT (access + refresh tokens) + bcrypt |
-| Logging | Pino (structured JSON) |
-| Security | Helmet, CORS, rate limiting |
-| Frontend | React 18 + TypeScript + Vite |
-| Styling | Tailwind CSS |
-| State | TanStack React Query |
-| Charts | Recharts |
 
 ---
 
@@ -104,7 +205,7 @@ This starts:
 - **PostgreSQL** on `:5432`
 - **Unified server** (API + SPA) on `:3001`
 
-Open `http://localhost:3001` — the SPA and API are served from the same origin.
+Open `http://localhost:3001` -- the SPA and API are served from the same origin.
 
 Seed the database:
 ```bash
@@ -121,40 +222,14 @@ Demo credentials: `demo@projectflow.com` / `password123`
 |----------|---------|-------------|
 | `PORT` | `3001` | Server port |
 | `NODE_ENV` | `development` | Environment mode |
-| `DATABASE_URL` | — | PostgreSQL connection string |
-| `JWT_ACCESS_SECRET` | — | Access token signing secret (min 16 chars) |
-| `JWT_REFRESH_SECRET` | — | Refresh token signing secret (min 16 chars) |
+| `DATABASE_URL` | -- | PostgreSQL connection string |
+| `JWT_ACCESS_SECRET` | -- | Access token signing secret (min 16 chars) |
+| `JWT_REFRESH_SECRET` | -- | Refresh token signing secret (min 16 chars) |
 | `JWT_ACCESS_EXPIRY` | `15m` | Access token TTL |
 | `JWT_REFRESH_EXPIRY` | `7d` | Refresh token TTL |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
 | `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window (15 min) |
 | `RATE_LIMIT_MAX_REQUESTS` | `100` | Max requests per window |
-
----
-
-## API Overview
-
-**Base URL:** `http://localhost:3001` (development) or your production domain.  
-**Auth:** `Authorization: Bearer <accessToken>`  
-
-All 25 endpoints are documented in full at [`docs/api.md`](docs/api.md).
-
-| Module | Endpoints |
-|--------|-----------|
-| Health | `GET /health`, `/health/live`, `/health/ready` |
-| Auth | `POST /register`, `/login`, `/refresh`, `GET /me` |
-| Projects | `GET /projects`, `POST`, `GET /:id`, `PUT /:id`, `DELETE /:id` |
-| Tasks | `GET /tasks/project/:projectId`, `POST`, `GET /:id`, `PUT /:id`, `PATCH /:id/status`, `DELETE /:id` |
-| Comments | `GET /comments/task/:taskId`, `POST`, `DELETE /:id` |
-| Analytics | `GET /analytics/overview`, `/analytics/projects/:id`, `/analytics/activity` |
-
-### In Production
-
-When running with `NODE_ENV=production`, the server also serves the React SPA:
-- `GET /` — loads the app
-- `GET /dashboard`, `/projects`, etc. — client-side routes return `index.html`
-- `GET /api/v1/*` — API routes return JSON
-- `GET /assets/*` — static build files
 
 ---
 
@@ -240,10 +315,16 @@ npm run test:watch -w server
 
 ## Documentation
 
-| File | Description |
-|------|-------------|
-| [`docs/api.md`](docs/api.md) | Complete API reference with all 25 endpoints, request/response schemas, error codes |
-| [`docs/architecture.md`](docs/architecture.md) | System architecture, request lifecycle, auth flow, database ERD, deployment diagrams |
+| File | What's Inside |
+|------|---------------|
+| [`docs/api.md`](docs/api.md) | All 25 endpoints, request/response schemas, error codes, rate limits, pagination |
+| [`docs/architecture.md`](docs/architecture.md) | Mermaid diagrams: system architecture, request lifecycle, auth flow, ERD, module graph, deployment, CI/CD |
+
+---
+
+## Built for
+
+Built for [Digital Heroes Training Task](https://digitalheroesco.com).
 
 ---
 

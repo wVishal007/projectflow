@@ -37,11 +37,13 @@ export function useFormValidation<T extends string>(fieldsConfig: FieldsConfig<T
 
   const handleChange = useCallback(
     (name: string, value: string) => {
-      if (!touched[name]) return;
+      // Re-validate if already touched or if an error is currently shown
+      // so the user sees feedback clear as they type correctly.
+      if (!touched[name] && !errors[name]) return;
       const error = validateField(name, value);
       setErrors((prev) => ({ ...prev, [name]: error }));
     },
-    [touched, validateField]
+    [touched, errors, validateField]
   );
 
   const handleBlur = useCallback(

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useProjects, useCreateProject, useDeleteProject } from '../hooks/useProjects';
 import { Button } from '../components/ui/Button';
@@ -7,32 +7,55 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { CardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
+import { FormField } from '../components/ui/FormField';
 import { formatDate } from '../lib/utils';
+
+const searchIcon = (
+  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
 
 export function Projects() {
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [nameError, setNameError] = useState('');
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const { data, isLoading, error, refetch } = useProjects();
   const createMutation = useCreateProject();
   const deleteMutation = useDeleteProject();
 
-  const handleCreate = async () => {
-    if (!name.trim()) return;
+  const handleCreate = useCallback(async () => {
+    if (!name.trim()) {
+      setNameError('Project name is required');
+      return;
+    }
+    setNameError('');
     await createMutation.mutateAsync({ name, description });
     setShowCreate(false);
     setName('');
     setDescription('');
-  };
+  }, [name, description, createMutation]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
     });
-  };
+  }, [deleteTarget, deleteMutation]);
+
+  const handleCloseCreate = useCallback(() => {
+    setShowCreate(false);
+    setNameError('');
+  }, []);
+
+  const handleOpenCreate = useCallback(() => setShowCreate(true), []);
+
+  const emptyAction = useMemo(() => (
+    <Button onClick={handleOpenCreate} size="lg">Create Project</Button>
+  ), [handleOpenCreate]);
 
   if (error) return <ErrorState message={error.message} onRetry={refetch} />;
 
@@ -47,26 +70,30 @@ export function Projects() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Projects</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your projects</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">Projects</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and organize your projects</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>New Project</Button>
+        <Button onClick={handleOpenCreate} size="md">
+          <svg className="w-4.5 h-4.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          New Project
+        </Button>
       </div>
 
       {projects.length > 0 && (
         <div className="relative max-w-md">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">{searchIcon}</div>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects..."
             className="input-field pl-10"
+            aria-label="Search projects"
           />
         </div>
       )}
@@ -78,13 +105,14 @@ export function Projects() {
       ) : projects.length === 0 ? (
         <EmptyState
           title="No projects yet"
-          description="Create your first project to get started"
-          action={<Button onClick={() => setShowCreate(true)}>Create Project</Button>}
+          description="Create your first project to start organizing your work"
+          action={emptyAction}
         />
       ) : filtered.length === 0 ? (
         <EmptyState
           title="No matching projects"
-          description="Try a different search term"
+          description="Try a different search term or create a new project"
+          action={emptyAction}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -92,8 +120,9 @@ export function Projects() {
             <Link
               key={project.id}
               to={`/projects/${project.id}`}
-              className="card hover:shadow-md transition-all duration-200 group hover:-translate-y-0.5"
+              className="card card-interactive group relative overflow-hidden"
             >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r" style={{ background: project.color }} />
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
@@ -106,7 +135,7 @@ export function Projects() {
                     e.preventDefault();
                     setDeleteTarget({ id: project.id, name: project.name });
                   }}
-                  className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 flex-shrink-0"
+                  className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex-shrink-0"
                   aria-label="Delete project"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,21 +157,19 @@ export function Projects() {
         </div>
       )}
 
-      <Modal isOpen={showCreate} onClose={() => setShowCreate(false)} title="New Project">
+      <Modal isOpen={showCreate} onClose={handleCloseCreate} title="New Project" size="md">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+          <FormField label="Name" required error={nameError} hint="Enter a descriptive name">
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input-field"
+              onChange={(e) => { setName(e.target.value); if (nameError) setNameError(''); }}
+              className={`input-field ${nameError ? 'input-field-error' : ''}`}
               placeholder="Project name"
               autoFocus
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          </FormField>
+          <FormField label="Description" hint="Optional description">
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -150,10 +177,10 @@ export function Projects() {
               rows={3}
               placeholder="Optional description"
             />
-          </div>
-          <div className="flex justify-end space-x-3">
-            <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={handleCreate} loading={createMutation.isPending}>Create</Button>
+          </FormField>
+          <div className="flex justify-end space-x-3 pt-2">
+            <Button variant="secondary" onClick={handleCloseCreate}>Cancel</Button>
+            <Button onClick={handleCreate} loading={createMutation.isPending}>Create Project</Button>
           </div>
         </div>
       </Modal>
