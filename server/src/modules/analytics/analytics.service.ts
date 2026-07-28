@@ -134,7 +134,7 @@ export class AnalyticsService {
         orderBy: { createdAt: 'desc' },
         include: {
           user: { select: { id: true, name: true, email: true } },
-          task: { select: { id: true, title: true }, include: { project: { select: { id: true, name: true } } } },
+          task: { select: { id: true, title: true, project: { select: { id: true, name: true } } } },
         },
       }),
       prisma.activity.count({ where }),
