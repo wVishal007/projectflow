@@ -14,4 +14,9 @@ export const CONSTANTS = {
     DELETED: 'deleted',
   } as const,
   BCRYPT_ROUNDS: 12,
+  AUDIT: {
+    CACHE_TTL_MS: 60 * 60 * 1000,
+    FETCH_TIMEOUT_MS: 10000,
+    MAX_URL_LENGTH: 2048,
+  },
 } as const;

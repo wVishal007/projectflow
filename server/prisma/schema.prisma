@@ -20,6 +20,7 @@ model User {
   assignedTasks Task[]
   comments      Comment[]
   activities    Activity[]
+  audits        Audit[]
 
   @@map("users")
 }
@@ -111,4 +112,35 @@ enum TaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+model Audit {
+  id                 String   @id @default(uuid())
+  url                String
+  title              String?
+  metaDescription    String?  @map("meta_description")
+  h1Count            Int      @default(0) @map("h1_count")
+  h1List             String[] @map("h1_list")
+  missingAltImages   Int      @default(0) @map("missing_alt_images")
+  totalImages        Int      @default(0) @map("total_images")
+  wordCount          Int      @default(0) @map("word_count")
+  seoScore           Int      @default(0) @map("seo_score")
+  responseTime       Int      @default(0) @map("response_time_ms")
+  contentType        String?  @map("content_type")
+  canonicalUrl       String?  @map("canonical_url")
+  charset            String?
+  isHtml             Boolean  @default(true) @map("is_html")
+  structuredDataCount Int     @default(0) @map("structured_data_count")
+  guidance           Json?
+  error              String?
+  errorCode          String?  @map("error_code")
+  status             String   @default("success")
+  userId             String   @map("user_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audits")
 }

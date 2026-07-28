@@ -7,6 +7,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Projects } from './pages/Projects';
 import { ProjectDetail } from './pages/ProjectDetail';
 import { Analytics } from './pages/Analytics';
+import { Audits } from './pages/Audits';
+import { AuditDetail } from './pages/AuditDetail';
 import { authApi } from './api/auth.api';
 import { isAuthenticated, getStoredUser, setAuth, clearAuth } from './lib/auth';
 import { User } from './types';
@@ -144,6 +146,8 @@ export default function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="audits" element={<Audits />} />
+          <Route path="audits/:id" element={<AuditDetail />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

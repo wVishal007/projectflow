@@ -1,6 +1,6 @@
 # ProjectFlow
 
-A production-grade Task & Project Management Platform with Analytics, built with React, Express.js, TypeScript, PostgreSQL, and Prisma.
+A production-grade Task & Project Management Platform with Analytics and **Website Auditing**, built with React, Express.js, TypeScript, PostgreSQL, Prisma, and Cheerio.
 
 > **Live Demo:** [https://projectflow-nk0s.onrender.com](https://projectflow-nk0s.onrender.com)
 
@@ -90,6 +90,7 @@ graph TB
 | Styling | Tailwind CSS |
 | State | TanStack React Query |
 | Charts | Recharts |
+| HTML Parsing | Cheerio (server-side DOM) |
 
 ---
 
@@ -117,7 +118,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 }
 ```
 
-### All 25 Endpoints
+### All 29 Endpoints
 
 | Module | Endpoints |
 |--------|-----------|
@@ -127,6 +128,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login \
 | Tasks | `GET /tasks/project/:projectId`, `POST`, `GET /:id`, `PUT /:id`, `PATCH /:id/status`, `DELETE /:id` |
 | Comments | `GET /comments/task/:taskId`, `POST`, `DELETE /:id` |
 | Analytics | `GET /analytics/overview`, `/analytics/projects/:id`, `/analytics/activity` |
+| Audits | `POST /audits`, `GET /audits`, `GET /audits/:id`, `DELETE /audits/:id` |
 
 > Full request/response schemas, error codes, and pagination docs: [`docs/api.md`](docs/api.md)
 
@@ -142,7 +144,7 @@ project/
 │   │   ├── errors/       Custom error class hierarchy
 │   │   ├── lib/          Prisma client singleton
 │   │   ├── middleware/    Auth, validation, logging, rate limiting, error handling
-│   │   ├── modules/      Domain modules (auth, projects, tasks, comments, analytics)
+│   │   ├── modules/      Domain modules (auth, projects, tasks, comments, analytics, audits)
 │   │   ├── types/        TypeScript interfaces and augmentations
 │   │   └── utils/        Logger, JWT, password hashing, pagination, query builder
 │   ├── prisma/           Schema, migrations, seed
@@ -295,6 +297,7 @@ npm run test:watch -w server
 - Tasks: CRUD, status transitions, filtering, sorting
 - Comments: CRUD, author-only deletion
 - Analytics: overview, project analytics, activity feed
+- Audits: URL validation, SEO scoring, caching, error handling, CRUD
 - Health endpoints and 404 handling
 
 ---

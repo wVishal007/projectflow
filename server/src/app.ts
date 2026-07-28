@@ -11,6 +11,7 @@ import { projectsRoutes } from './modules/projects/projects.routes';
 import { tasksRoutes } from './modules/tasks/tasks.routes';
 import { commentsRoutes } from './modules/comments/comments.routes';
 import { analyticsRoutes } from './modules/analytics/analytics.routes';
+import { auditsRoutes } from './modules/audits/audits.routes';
 import { prisma } from './lib/prisma';
 import { env } from './config/env';
 import { createChildLogger } from './utils/logger';
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/v1/tasks', tasksRoutes);
   app.use('/api/v1/comments', commentsRoutes);
   app.use('/api/v1/analytics', analyticsRoutes);
+  app.use('/api/v1/audits', auditsRoutes);
 
   const clientDistPath = path.resolve(__dirname, '..', '..', 'client', 'dist');
   app.use(express.static(clientDistPath));
